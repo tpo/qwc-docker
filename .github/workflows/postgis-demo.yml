@@ -28,5 +28,5 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
           tags: "latest,${{ steps.get_tag.outputs.tag }}"
-          workdir: postgis
+          workdir: postgis-demo
           buildargs: ALEMBIC_VERSION

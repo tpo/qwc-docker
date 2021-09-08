@@ -3,7 +3,7 @@ services:
   qwc-postgis:
     image: sourcepole/qwc-demo-db:latest
     # build:
-    #   context: ./postgis
+    #   context: ./postgis-demo
     #   args:
     #     - ALEMBIC_VERSION=c77774920e5b
     healthcheck:

@@ -2,10 +2,10 @@
 set -e
 
 # import demo data into GeoDB
-ogr2ogr -f PostgreSQL PG:"dbname=qwc_demo user=qwc_admin password=qwc_admin" -lco SCHEMA=qwc_geodb /tmp/demo_geodata.gpkg
+ogr2ogr -f PostgreSQL PG:"dbname=qwc_geodb user=qwc_admin password=qwc_admin" -lco SCHEMA=qwc_geodb /tmp/demo_geodata.gpkg
 
 # create view for fulltext search
-psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_geodb <<-EOSQL
 CREATE OR REPLACE VIEW qwc_geodb.search_v AS
     SELECT
         'ne_10m_admin_0_countries'::text AS subclass,
@@ -22,7 +22,7 @@ CREATE OR REPLACE VIEW qwc_geodb.search_v AS
 EOSQL
 
 # create demo tables and features for editing
-psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_geodb <<-EOSQL
     CREATE TABLE qwc_geodb.edit_points
     (
       id serial,
@@ -93,7 +93,7 @@ psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
         ST_GeomFromText('POLYGON((950819 6003952,950831 6003947,950828 6003925,950822 6003905,950804 6003913,950819 6003952))', 3857));
 EOSQL
 
-psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_geodb <<-EOSQL
   GRANT SELECT ON ALL TABLES IN SCHEMA qwc_geodb TO qgis_server;
   GRANT SELECT ON ALL SEQUENCES IN SCHEMA qwc_geodb TO qgis_server;
   GRANT SELECT ON ALL TABLES IN SCHEMA qwc_geodb TO qwc_service;
@@ -105,7 +105,7 @@ EOSQL
 # insert demo records into ConfigDB
 # >>> from werkzeug.security import generate_password_hash
 # >>> print(generate_password_hash('demo'))
-psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_config <<-EOSQL
   -- demo role and user (password: 'demo')
   INSERT INTO qwc_config.roles (name, description)
     VALUES ('demo', 'Demo role');
@@ -116,17 +116,17 @@ psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
 
   -- resources for editing
   INSERT INTO qwc_config.resources (parent_id, type, name)
-    VALUES (NULL, 'map', 'qwc_demo');
+    VALUES (NULL, 'map', 'qwc_geodb');
   INSERT INTO qwc_config.resources (parent_id, type, name)
-    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_demo'), 'data', 'edit_points');
+    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_geodb'), 'data', 'edit_points');
   INSERT INTO qwc_config.resources (parent_id, type, name)
-    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_demo'), 'data', 'edit_lines');
+    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_geodb'), 'data', 'edit_lines');
   INSERT INTO qwc_config.resources (parent_id, type, name)
-    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_demo'), 'data', 'edit_polygons');
+    VALUES ((SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_geodb'), 'data', 'edit_polygons');
 
   -- permissions for public editing
   INSERT INTO qwc_config.permissions (role_id, resource_id)
-    VALUES ((SELECT id FROM qwc_config.roles WHERE name = 'public'), (SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_demo'));
+    VALUES ((SELECT id FROM qwc_config.roles WHERE name = 'public'), (SELECT id FROM qwc_config.resources WHERE type = 'map' AND name = 'qwc_geodb'));
   INSERT INTO qwc_config.permissions (role_id, resource_id, write)
     VALUES ((SELECT id FROM qwc_config.roles WHERE name = 'public'), (SELECT id FROM qwc_config.resources WHERE type = 'data' AND name = 'edit_points'), TRUE);
   INSERT INTO qwc_config.permissions (role_id, resource_id, write)
@@ -136,7 +136,7 @@ psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
 EOSQL
 
 # add demo user info columns
-psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_config <<-EOSQL
   ALTER TABLE qwc_config.user_infos
     ADD COLUMN surname character varying NOT NULL;
   ALTER TABLE qwc_config.user_infos
@@ -149,6 +149,6 @@ psql -v ON_ERROR_STOP=1 --username qwc_admin -d qwc_demo <<-EOSQL
     ADD COLUMN city character varying;
 EOSQL
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -d qwc_demo <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -d qwc_geodb <<-EOSQL
   VACUUM FULL;
 EOSQL
