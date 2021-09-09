@@ -13,7 +13,8 @@ ENV PGSERVICEFILE /tmp/.pg_service.conf
 
 # setup database
 RUN curl -o /tmp/demo_geodata.gpkg -L https://github.com/pka/mvt-benchmark/raw/master/data/mvtbench.gpkg
-COPY setup-demo-data.sh /docker-entrypoint-initdb.d/2_setup-demo-data.sh
+COPY setup-demo-data.sh /tmp/setup-demo-data.sh
+COPY docker-entrypoint-setup-demo-data.sh /tmp/docker-entrypoint-setup-demo-data.sh 
 ENV PGDATA /var/lib/postgresql/docker
 ENV POSTGRES_PASSWORD U6ZqsEdBmrER
-RUN gosu postgres bash /tmp/docker-entrypoint.sh postgres
+RUN gosu postgres bash /tmp/docker-entrypoint-setup-demo-data.sh postgres
